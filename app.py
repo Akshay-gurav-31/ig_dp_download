@@ -1,11 +1,27 @@
+from flask import Flask, request, jsonify, send_from_directory, render_template
 import instaloader
-import time
 import os
 from datetime import datetime
+import time
+import socket
+
+app = Flask(__name__)
+
+def find_free_port(start_port=5000):
+    port = start_port
+    while True:
+        try:
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            s.bind(('127.0.0.1', port))
+            s.close()
+            return port
+        except OSError:
+            port += 1
+            if port > 65535:
+                raise Exception("No free ports available")
 
 def download_instagram_profile(username):
     try:
-        # Create instance with better configuration
         L = instaloader.Instaloader(
             download_pictures=True,
             download_videos=False,
@@ -18,69 +34,74 @@ def download_instagram_profile(username):
             request_timeout=60
         )
         
-        # Optional login (uncomment these 3 lines if needed)
+        # Add login (uncomment and replace YOUR_USERNAME for private accounts)
         # L.load_session_from_file('YOUR_USERNAME')
-        # OR
-        # L.interactive_login('YOUR_USERNAME')  # Will prompt for password
         
-        try:
-            print(f"\nAttempting to download profile: @{username}")
-            
-            # Get profile
-            profile = instaloader.Profile.from_username(L.context, username)
-            
-            print(f"\nProfile Info:")
-            print(f"Username: @{profile.username}")
-            print(f"Name: {profile.full_name}")
-            print(f"Bio: {profile.biography}")
-            print(f"Followers: {profile.followers}")
-            print(f"Following: {profile.followees}")
-            print(f"Private: {'Yes' if profile.is_private else 'No'}")
-            
-            # Create download folder
-            folder_name = f"ig_{username}_{datetime.now().strftime('%Y%m%d')}"
-            if not os.path.exists(folder_name):
-                os.makedirs(folder_name)
-            
-            # FIXED: Profile picture download
-            print("\nDownloading profile picture...")
-            L.download_profilepic(profile)  # Now with correct arguments
-            
-            # For public accounts, download posts
-            if not profile.is_private:
-                print("\nDownloading recent posts (max 12)...")
-                posts = profile.get_posts()
-                for i, post in enumerate(posts):
-                    if i >= 12:  # Limit to 12 posts
-                        break
-                    try:
-                        L.download_post(post, target=folder_name)
-                        time.sleep(5)  # Increased delay to avoid blocks
-                    except Exception as e:
-                        print(f"Couldn't download post {i+1}: {str(e)}")
-                        continue
-            
-            print(f"\n✅ Download complete! Saved in folder: {folder_name}")
-            
-        except instaloader.exceptions.ProfileNotExistsException:
-            print(f"\n❌ Error: @{username} doesn't exist or is unavailable")
-        except instaloader.exceptions.PrivateProfileNotFollowedException:
-            print(f"\n❌ Error: @{username} is private. You need to follow this account.")
-        except Exception as e:
-            print(f"\n⚠️ An error occurred: {str(e)}")
-            
-    except KeyboardInterrupt:
-        print("\n⚠️ Download interrupted by user")
+        profile = instaloader.Profile.from_username(L.context, username)
+        
+        profile_info = {
+            "username": profile.username,
+            "full_name": profile.full_name,
+            "biography": profile.biography,
+            "followers": profile.followers,
+            "following": profile.followees,
+            "post_count": profile.mediacount,
+            "is_private": profile.is_private,
+            "profile_pic_url": profile.get_profile_pic_url()
+        }
+        
+        folder_name = f"downloads/ig_{username}_{datetime.now().strftime('%Y%m%d')}"
+        if not os.path.exists(folder_name):
+            os.makedirs(folder_name)
+        
+        L.download_profilepic(profile)
+        downloads = [{"name": "Profile picture", "status": "success", "path": f"{folder_name}/{profile.username}.jpg"}]
+        
+        if not profile.is_private:
+            posts = profile.get_posts()
+            for i, post in enumerate(posts):
+                if i >= 12:
+                    break
+                try:
+                    L.download_post(post, target=folder_name)
+                    downloads.append({"name": f"Post {i+1}", "status": "success", "path": f"{folder_name}/{post.shortcode}.jpg"})
+                    time.sleep(5)
+                except Exception as e:
+                    downloads.append({"name": f"Post {i+1}", "status": "failed", "error": str(e)})
+        
+        return {
+            "status": "success",
+            "profile": profile_info,
+            "folder": folder_name,
+            "downloads": downloads
+        }
+    
+    except instaloader.exceptions.ProfileNotExistsException:
+        return {"status": "error", "message": "Profile doesn't exist or is unavailable"}
+    except instaloader.exceptions.PrivateProfileNotFollowedException:
+        return {"status": "error", "message": "Private account - login required"}
     except Exception as e:
-        print(f"\n⚠️ Critical error: {str(e)}")
+        return {"status": "error", "message": str(e)}
+
+@app.route('/')
+def index():
+    return render_template('index.html')  # Serve from templates/
+
+@app.route('/download', methods=['POST'])
+def download():
+    username = request.json.get('username')
+    if not username:
+        return jsonify({"status": "error", "message": "Username is required"}), 400
+    
+    result = download_instagram_profile(username)
+    return jsonify(result)
+
+@app.route('/download_file/<path:filename>')
+def download_file(filename):
+    return send_from_directory('downloads', filename, as_attachment=True)
 
 if __name__ == "__main__":
-    print("Instagram Profile Downloader v3 (Fixed)")
-    print("--------------------------------------")
-    print("Note: For private accounts, you need to be logged in")
-    username = input("Enter Instagram username (without @): ").strip()
-    
-    if username:
-        download_instagram_profile(username)
-    else:
-        print("Please enter a valid username")
+    os.makedirs('downloads', exist_ok=True)
+    port = find_free_port()
+    print(f"Starting server on http://127.0.0.1:{port}")
+    app.run(debug=True, port=port)
