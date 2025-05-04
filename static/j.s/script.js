@@ -8,14 +8,13 @@ document.getElementById("downloadBtn").addEventListener("click", function() {
     // Clear previous data
     document.getElementById("errorAlert").classList.add("d-none");
     document.getElementById("profileSection").classList.add("d-none");
-    document.getElementById("downloadProgress").classList.add("d-none");
 
     // Show loading progress
     document.getElementById("downloadProgress").classList.remove("d-none");
     document.getElementById("downloadStatus").textContent = "Fetching profile...";
 
-    // Fetch data from your backend (assuming you have an API to handle Instagram data)
-    fetch(`/api/instagram/profile/${username}`)
+    // Fetching profile image from instaDp.io (example)
+    fetch(`https://www.instadp.io/api/instagram?username=${username}`)
         .then(response => response.json())
         .then(data => {
             if (data.error) {
@@ -25,16 +24,9 @@ document.getElementById("downloadBtn").addEventListener("click", function() {
 
             // Display profile info
             document.getElementById("profileSection").classList.remove("d-none");
-            document.getElementById("profileImage").src = data.profile_image;
+            document.getElementById("profileImage").src = data.profile_image_url;
             document.getElementById("profileName").textContent = data.name;
             document.getElementById("profileUsername").textContent = `@${data.username}`;
-            document.getElementById("followerCount").textContent = data.followers;
-            document.getElementById("followingCount").textContent = data.following;
-            document.getElementById("postCount").textContent = data.posts;
-            document.getElementById("profileBio").textContent = data.bio;
-
-            // Hide progress bar
-            document.getElementById("downloadStatus").textContent = "Profile loaded.";
         })
         .catch(error => {
             displayError("An error occurred while fetching the profile.");
