@@ -1,29 +1,52 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Instagram DP Downloader</title>
-    <link rel="stylesheet" href="/static/css/styles.css">
-</head>
-<body>
-    <div class="container">
-        <h1>Instagram DP Downloader</h1>
-        <form method="POST" action="/">
-            <input type="text" name="username" placeholder="Enter Instagram Username" required>
-            <button type="submit">Download DP</button>
-        </form>
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f0f0f0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+}
 
-        {% if error %}
-            <p class="error">{{ error }}</p>
-        {% endif %}
+.container {
+    background-color: white;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    text-align: center;
+}
 
-        {% if image_url %}
-            <h2>Downloaded Profile Picture:</h2>
-            <img src="{{ image_url }}" alt="Profile Picture" class="dp-image">
-            <p><a href="{{ image_url }}" download>Download Image</a></p>
-        {% endif %}
-    </div>
-    <script src="/static/js/script.js"></script>
-</body>
-</html>
+h1 {
+    margin-bottom: 20px;
+}
+
+input {
+    padding: 10px;
+    margin-right: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+}
+
+button {
+    padding: 10px 20px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+button:hover {
+    background-color: #0056b3;
+}
+
+.error {
+    color: red;
+    margin-top: 10px;
+}
+
+.dp-image {
+    max-width: 200px;
+    margin-top: 20px;
+    border-radius: 50%;
+}
