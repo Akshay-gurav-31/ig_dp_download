@@ -7,7 +7,7 @@ document.getElementById("downloadBtn").addEventListener("click", function () {
 
     let username = input;
 
-    // If input is full URL, extract username
+    // If input is a full Instagram URL
     if (input.includes("instagram.com")) {
         const match = input.match(/instagram\.com\/([a-zA-Z0-9_.]+)/);
         if (match && match[1]) {
@@ -18,20 +18,20 @@ document.getElementById("downloadBtn").addEventListener("click", function () {
         }
     }
 
-    // Construct the profile image URL (this doesn't always work now due to Instagram restrictions)
-    const profileImageUrl = `https://www.instagram.com/${username}/profile_pic`;
+    // Example fallback dummy image URL
+    const profileImageUrl = `https://i.imgur.com/ZRDOuzH.jpeg`;  // Static DP for testing
 
-    // Display the image
-    const img = document.getElementById("profileImage");
-    img.src = profileImageUrl;
-    img.classList.remove("d-none");
-
-    // Update rest of the UI
+    // Update UI
     document.getElementById("profileSection").classList.remove("d-none");
+    document.getElementById("profileImage").src = profileImageUrl;
     document.getElementById("profileName").innerText = username;
     document.getElementById("profileUsername").innerText = "@" + username;
 
-    // Hide download/progress sections
-    document.getElementById("downloadProgress").classList.add("d-none");
-    document.getElementById("errorAlert").classList.add("d-none");
+    // Auto-download the image
+    const link = document.createElement("a");
+    link.href = profileImageUrl;
+    link.download = `${username}_profile.jpg`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
 });
