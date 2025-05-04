@@ -3,22 +3,8 @@ import instaloader
 import os
 from datetime import datetime
 import time
-import socket
 
 app = Flask(__name__)
-
-def find_free_port(start_port=5000):
-    port = start_port
-    while True:
-        try:
-            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            s.bind(('127.0.0.1', port))
-            s.close()
-            return port
-        except OSError:
-            port += 1
-            if port > 65535:
-                raise Exception("No free ports available")
 
 def download_instagram_profile(username):
     try:
@@ -85,7 +71,7 @@ def download_instagram_profile(username):
 
 @app.route('/')
 def index():
-    return render_template('index.html')  # Serve from templates/
+    return render_template('index.html')  # Serve the HTML page from templates/
 
 @app.route('/download', methods=['POST'])
 def download():
@@ -102,6 +88,9 @@ def download_file(filename):
 
 if __name__ == "__main__":
     os.makedirs('downloads', exist_ok=True)
-    port = find_free_port()
-    print(f"Starting server on http://127.0.0.1:{port}")
-    app.run(debug=True, port=port)
+
+    # Use Render's provided port if available
+    port = int(os.environ.get("PORT", 5000))  # Default to 5000 if not specified by Render
+    print(f"Starting server on http://0.0.0.0:{port}")
+    
+    app.run(debug=True, host='0.0.0.0', port=port)
